@@ -10,8 +10,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId } = (await request.json()) as { userId?: string };
-  const employee = userId ? getEmployee(userId) : null;
+  const body = (await request.json()) as { userId?: string; customUser?: { id?: string; name: string; email: string; role: string; department?: string } };
+  let employee = body.userId ? getEmployee(body.userId) : null;
+
+  if (!employee && body.customUser) {
+    const { addEmployee } = await import('@/lib/hr-data');
+    employee = addEmployee(body.customUser);
+  }
+
   if (!employee) return NextResponse.json({ error: 'Invalid demo identity' }, { status: 400 });
 
   const response = NextResponse.json({ user: getPublicUser(employee) });

@@ -85,6 +85,36 @@ export function getEmployee(id: string) {
   return employees[id] ?? null;
 }
 
+export function getAllEmployees() {
+  return Object.values(employees).map(getPublicUser);
+}
+
+export function addEmployee(data: { id?: string; name: string; email: string; role: string; title?: string; department?: string }) {
+  const role: Role = data.role === 'Admin' || data.role === 'SYSTEM_ADMIN' ? 'SYSTEM_ADMIN' : data.role === 'HR' || data.role === 'HR_ADMIN' ? 'HR_ADMIN' : 'EMPLOYEE';
+  const id = data.id || `${role === 'SYSTEM_ADMIN' ? 'adm' : role === 'HR_ADMIN' ? 'hr' : 'emp'}-${Date.now().toString().slice(-4)}`;
+  const firstName = data.name.split(' ')[0] || data.name;
+  const initials = data.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'US';
+
+  const newEmployee: Employee = {
+    id,
+    name: data.name,
+    firstName,
+    role,
+    title: data.title || (role === 'SYSTEM_ADMIN' ? 'System Administrator' : role === 'HR_ADMIN' ? 'HR Operations Specialist' : 'Employee Specialist'),
+    department: data.department || (role === 'SYSTEM_ADMIN' ? 'IT & Security' : role === 'HR_ADMIN' ? 'People Operations' : 'General & Tech'),
+    initials,
+    salary: '₹17,50,000 per year',
+    leaveBalance: 14,
+    email: data.email,
+    phone: '+91 98000 ' + Math.floor(10000 + Math.random() * 90000),
+    manager: 'Department Manager',
+    benefits: 'Full health insurance cover, term life insurance, learning & wellness budget.',
+  };
+
+  employees[id] = newEmployee;
+  return newEmployee;
+}
+
 export function getPublicUser(employee: Employee) {
   const { id, name, firstName, role, title, department, initials } = employee;
   return { id, name, firstName, role, title, department, initials };
