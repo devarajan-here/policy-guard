@@ -13,6 +13,7 @@ import {
   DoorOpen,
   FileText,
   Fingerprint,
+  House,
   KeyRound,
   LockKeyhole,
   MessageSquareText,
@@ -88,7 +89,7 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [activeTrace, setActiveTrace] = useState<Message>(INITIAL_MESSAGE);
-  const endRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/session')
@@ -98,8 +99,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const chatPanel = chatScrollRef.current;
+    if (!chatPanel) return;
+    chatPanel.scrollTo({ top: chatPanel.scrollHeight, behavior: 'smooth' });
   }, [messages, sending]);
+
+  function goHome() {
+    setMessages([INITIAL_MESSAGE]);
+    setActiveTrace(INITIAL_MESSAGE);
+    setInput('');
+  }
 
   async function signIn() {
     const response = await fetch('/api/session', {
@@ -258,7 +267,12 @@ export default function Home() {
 
         <nav className="side-nav">
           <span className="nav-label">Workspace</span>
-          <button className="active"><MessageSquareText size={18} /> AI assistant</button>
+          <button className={messages.length === 1 ? 'active' : ''} onClick={goHome}>
+            <House size={18} /> Home
+          </button>
+          <button className={messages.length > 1 ? 'active' : ''}>
+            <MessageSquareText size={18} /> AI assistant
+          </button>
           <button><CircleUserRound size={18} /> My profile</button>
           <button><FileText size={18} /> Documents <span className="soon">Soon</span></button>
           {user.role === 'HR_ADMIN' && <button><UsersRound size={18} /> People directory</button>}
@@ -297,7 +311,7 @@ export default function Home() {
 
         <div className="content-grid">
           <section className="chat-panel">
-            <div className="chat-scroll">
+            <div className="chat-scroll" ref={chatScrollRef}>
               <div className="chat-heading">
                 <div className="bot-orb"><Bot size={24} /></div>
                 <h2>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user.firstName}</h2>
@@ -338,7 +352,6 @@ export default function Home() {
                     <div className="message-bubble typing"><span /><span /><span /></div>
                   </div>
                 )}
-                <div ref={endRef} />
               </div>
             </div>
 
