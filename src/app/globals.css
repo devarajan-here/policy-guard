@@ -249,12 +249,13 @@ button { cursor: pointer; }
   .login-nav { padding: 0 20px; }
   .konsole-chip { font-size: 0; }
   .konsole-chip svg { margin: 0; }
-  .login-shell { display: block; width: auto; padding: 45px 20px; }
+  .login-shell { display: block; width: 100%; padding: 36px 8px; }
   .login-story { text-align: center; margin-bottom: 30px; }
   .login-story h1 { font-size: 42px; letter-spacing: -2.4px; }
   .login-story > p { font-size: 14px; }
-  .login-card { max-width: 430px; margin: auto; padding: 28px; }
-  .identity-menu { left: 28px; right: 28px; }
+  .login-card { width: 100%; max-width: 460px; margin: auto; padding: 32px 24px; border-radius: 26px; }
+  .identity-select b { white-space: nowrap; }
+  .identity-menu { left: 24px; right: 24px; }
   .sidebar { display: none; }
   .topbar { padding: 0 16px; }
   .mobile-logo { display: grid; place-items: center; color: var(--green); }
