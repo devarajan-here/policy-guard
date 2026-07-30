@@ -2,11 +2,10 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import {
-  Activity, ArrowRight, BadgeCheck, Bot, Building2, Check, ChevronRight, CircleUserRound,
-  Clock3, Database, DoorOpen, FileSpreadsheet, FileText, Fingerprint, Gauge, HardDrive,
-  KeyRound, LifeBuoy, Link2, LockKeyhole, MessageSquareText, Network, Plus, Search, Send,
-  Settings, Shield, ShieldAlert, ShieldCheck, Sparkles, Upload, UserCheck, UserCog, UserPlus,
-  UsersRound, WalletCards, X,
+  Activity, ArrowRight, BadgeCheck, Bot, Check, ChevronRight, CircleUserRound,
+  Database, DoorOpen, Eye, EyeOff, FileSpreadsheet, FileText, Fingerprint, Gauge,
+  KeyRound, Link2, LockKeyhole, MessageSquareText, Network, Plus, Search, Send,
+  Shield, ShieldAlert, ShieldCheck, Sparkles, Upload, UserCog, UserPlus, UsersRound, X,
 } from 'lucide-react';
 
 type Role = 'EMPLOYEE' | 'HR_ADMIN' | 'SYSTEM_ADMIN';
@@ -20,7 +19,7 @@ const USERS = [
   { id:'hr-2001', name:'Neha Kapoor', role:'HR', detail:'People Operations · HR-2001', initials:'NK' },
   { id:'adm-3001', name:'Karthik Menon', role:'Admin', detail:'IT & Security · ADM-3001', initials:'KM' },
 ];
-const WELCOME:Message = { id:'welcome', role:'assistant', content:'Hi! I’m your secure HR assistant. I only access information permitted for your signed-in role.', time:'Just now' };
+const WELCOME:Message = { id:'welcome', role:'assistant', content:'Hi! I’m PeopleGuard. Ask me about your salary, benefits, manager, contact details, leave balance, or company policies. I retrieve only the fields your signed-in identity is allowed to see.', time:'Just now' };
 const EMPLOYEES = [
   { id:'EMP-1001', name:'Priya Sharma', dept:'Product Design', status:'Active', leave:12 },
   { id:'EMP-1002', name:'Arjun Mehta', dept:'Engineering', status:'Active', leave:8 },
@@ -45,15 +44,13 @@ export default function Home(){
   const [source,setSource]=useState('none');
   const scroll=useRef<HTMLDivElement>(null);
 
-  useEffect(()=>{ fetch('/api/session').then(r=>r.ok?r.json():null).then(d=>setUser(d?.user??null)).finally(()=>setLoading(false)); },[]);
+  useEffect(()=>{ fetch('/api/session').then(r=>r.ok?r.json():null).then(d=>{setUser(d?.user??null);if(d?.user?.role==='SYSTEM_ADMIN'&&!localStorage.getItem('peopleguard_admin_tour_done'))setTutorial(true)}).finally(()=>setLoading(false)); },[]);
   useEffect(()=>{ scroll.current?.scrollTo({top:scroll.current.scrollHeight,behavior:'smooth'}); },[messages,sending]);
-  useEffect(()=>{
-    if(user?.role==='SYSTEM_ADMIN' && !localStorage.getItem('peopleguard_admin_tour_done')) setTutorial(true);
-  },[user]);
 
   async function signIn(){
     const r=await fetch('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:selected})});
-    if(!r.ok)return; const d=await r.json(); setUser(d.user); setView('overview');
+    if(!r.ok)return; const d=await r.json(); setUser(d.user); setView(d.user.role==='SYSTEM_ADMIN'?'overview':'assistant');
+    if(d.user.role==='SYSTEM_ADMIN'&&!localStorage.getItem('peopleguard_admin_tour_done'))setTutorial(true);
   }
   async function signOut(){ await fetch('/api/session',{method:'DELETE'}); setUser(null); setMessages([WELCOME]); }
   async function send(e?:FormEvent,prompt?:string){
@@ -72,7 +69,7 @@ export default function Home(){
     return <main className="login-page">
       <header className="login-nav"><Brand/><span className="konsole-chip"><Shield size={14}/> Protected by Konsole</span></header>
       <section className="login-shell">
-        <div className="login-story"><span className="eyebrow"><Sparkles size={14}/> Secure HR, one trusted workspace</span><h1>Your people data.<br/><em>Guarded by design.</em></h1><p>One login identifies every user. Role-based access then opens the correct Employee, HR, or Admin workspace.</p>
+        <div className="login-story"><span className="eyebrow"><Sparkles size={14}/> Answers without an HR ticket</span><h1>Ask about your work life.<br/><em>Get a secure answer now.</em></h1><p>PeopleGuard is an employee-data chatbot. Your identity limits what the backend retrieves, while Konsole protects the AI interaction from prompt attacks and sensitive-data leakage.</p>
           <div className="security-path"><Path icon={<Fingerprint/>} title="Authenticate" text="Who are you?"/><i/><Path icon={<LockKeyhole/>} title="Authorize" text="What can you access?"/><i/><Path icon={<ShieldCheck/>} title="Protect AI" text="Konsole security"/></div>
         </div>
         <div className="login-card"><div className="login-card-icon"><KeyRound/></div><h2>Sign in to ABC People</h2><p>Select a role-based demo account. Production deployment can connect SSO or your identity provider.</p>
@@ -85,10 +82,10 @@ export default function Home(){
   }
 
   const nav=user.role==='EMPLOYEE'
-    ? [['overview','My overview',Gauge],['assistant','AI assistant',MessageSquareText],['profile','My profile',CircleUserRound],['documents','Payslips & documents',FileText],['requests','My requests',Clock3]]
+    ? [['assistant','Ask PeopleGuard',MessageSquareText],['profile','My authorized data',CircleUserRound],['documents','My documents',FileText]]
     : user.role==='HR_ADMIN'
-    ? [['overview','HR overview',Gauge],['people','People directory',UsersRound],['approvals','Registrations & approvals',UserCheck],['leave','Leave management',Clock3],['policies','Policies & documents',FileText],['assistant','AI assistant',MessageSquareText],['security','Security reviews',ShieldAlert]]
-    : [['overview','Admin overview',Gauge],['users','Users & roles',UserCog],['sources','Employee data sources',Database],['integrations','Konsole & LLM',Network],['audit','Audit & security',Activity],['settings','System settings',Settings]];
+    ? [['assistant','Ask PeopleGuard',MessageSquareText],['people','Authorized employees',UsersRound],['policies','Knowledge sources',FileText],['security','Security reviews',ShieldAlert]]
+    : [['overview','Chatbot setup',Gauge],['users','Users & authorization',UserCog],['sources','Employee data source',Database],['integrations','Konsole & LLM',Network],['audit','Security audit',Activity]];
 
   return <main className="app-shell">
     <aside className="sidebar"><div className="sidebar-brand"><Brand/></div><nav className="side-nav"><span className="nav-label">{roleName(user.role)} workspace</span>{nav.map(([id,label,Icon])=><button key={id as string} className={view===id?'active':''} onClick={()=>setView(id as string)}><Icon size={17}/>{label as string}</button>)}</nav>
@@ -111,37 +108,114 @@ function Brand(){return <div className="brand"><div className="brand-mark"><Shie
 function Path({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <div>{icon}<span><b>{title}</b><small>{text}</small></span></div>}
 
 function EmployeeView({view,user,openAssistant}:{view:string;user:User;openAssistant:()=>void}){
-  if(view==='profile') return <StandardPage title="My profile" subtitle="Only fields you are permitted to update are editable."><div className="profile-card"><span className="avatar xl">{user.initials}</span><div><h3>{user.name}</h3><p>{user.title} · {user.department}</p><button className="secondary">Edit permitted fields</button></div></div></StandardPage>;
+  if(view==='profile') return <StandardPage title="My authorized data" subtitle="These are the record categories PeopleGuard may retrieve when you ask."><div className="profile-card"><span className="avatar xl">{user.initials}</span><div><h3>{user.name}</h3><p>{user.title} · {user.department}</p><div className="data-tags"><span>Compensation</span><span>Benefits</span><span>Leave balance</span><span>Manager</span><span>Masked contact data</span></div><button className="primary-inline" onClick={openAssistant}><MessageSquareText size={15}/> Ask about my data</button></div></div></StandardPage>;
   if(view==='documents') return <StandardPage title="Payslips & documents" subtitle="Protected documents linked to your employee account."><List rows={['June 2026 payslip','FY 2025–26 tax statement','Health insurance e-card']}/></StandardPage>;
-  if(view==='requests') return <StandardPage title="My requests" subtitle="Track leave and HR service requests."><List rows={['Casual leave · 2 Aug · Pending manager approval','Address update · Completed','Employment letter · Ready to download']}/></StandardPage>;
-  return <StandardPage title={`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${user.firstName}`} subtitle="Your personal HR information, securely in one place.">
-    <div className="metric-grid"><Metric label="Leave available" value="12 days" hint="4 requests used"/><Metric label="Next payday" value="31 Jul" hint="Payslip after processing"/><Metric label="Open requests" value="1" hint="Awaiting approval"/></div>
-    <div className="split"><Panel title="Quick actions"><Action icon={<MessageSquareText/>} title="Ask PeopleGuard" text="Secure answers using only your data" onClick={openAssistant}/><Action icon={<FileText/>} title="View latest payslip" text="June 2026"/><Action icon={<Clock3/>} title="Request leave" text="Submit a new leave request"/></Panel><Panel title="Access boundary"><div className="boundary-box"><LockKeyhole/><div><b>Employee self-service</b><p>You can view your own HR information. Other employee records are denied before Konsole or an LLM is called.</p></div></div></Panel></div>
-  </StandardPage>;
+  return null;
 }
 
 function HRView({view,openAssistant}:{view:string;openAssistant:()=>void}){
   if(view==='people') return <PeopleTable/>;
-  if(view==='approvals') return <StandardPage title="Registrations & approvals" subtitle="Verify new employees before granting portal access."><div className="approval-card"><span className="avatar">RV</span><div><b>Rahul Verma</b><p>Engineering · EMP-1048 · Submitted 28 Jul</p></div><button className="secondary">Review</button><button className="approve">Approve</button></div></StandardPage>;
-  if(view==='leave') return <StandardPage title="Leave management" subtitle="Review balances and pending leave for permitted departments."><List rows={['Rahul Verma · 3 days · Pending','Priya Sharma · 1 day · Manager approved','Arjun Mehta · Balance correction requested']}/></StandardPage>;
   if(view==='policies') return <StandardPage title="Policies & documents" subtitle="Publish trusted content used by the HR assistant."><button className="primary-inline"><Upload size={16}/> Upload HR policy</button><List rows={['Hybrid work policy · v3.2','Leave policy · v5.0','Benefits handbook · 2026']}/></StandardPage>;
   if(view==='security') return <StandardPage title="Security reviews" subtitle="Requests requiring HR review—without exposing unauthorized data."><List rows={['Blocked bulk salary request · KSL-42AF91','Prompt injection detected · KSL-19C7D0','PII masked in response · KSL-82BD31']}/></StandardPage>;
-  return <StandardPage title="HR operations" subtitle="Manage people processes within your authorized scope."><div className="metric-grid"><Metric label="Employees in scope" value="184" hint="3 departments"/><Metric label="Pending approvals" value="7" hint="2 need attention"/><Metric label="Open leave requests" value="12" hint="5 due today"/></div><div className="split"><Panel title="Needs attention"><Action icon={<UserCheck/>} title="3 registrations need review" text="Validate identity and department"/><Action icon={<Clock3/>} title="5 leave requests due today" text="Review manager decisions"/><Action icon={<ShieldAlert/>} title="2 security escalations" text="Inspect denied AI requests"/></Panel><Panel title="HR assistant"><div className="boundary-box"><Bot/><div><b>Authorized HR questions</b><p>Ask across only the departments and employee fields assigned to you.</p><button className="text-button" onClick={openAssistant}>Open assistant <ArrowRight size={14}/></button></div></div></Panel></div></StandardPage>;
+  return <StandardPage title="HR chatbot access" subtitle="Use PeopleGuard for permitted employee questions instead of navigating an HRMS."><div className="boundary-box"><Bot/><div><b>Authorized HR questions</b><p>Ask across only the departments and employee fields assigned to you.</p><button className="text-button" onClick={openAssistant}>Open assistant <ArrowRight size={14}/></button></div></div></StandardPage>;
 }
+
+type AdminDialog = 'source'|'konsole'|'user'|null;
+type AdminPerson = { name:string; email:string; role:string; scope:string; status:string };
 
 function AdminView({view,source,setSource,startTour}:{view:string;source:string;setSource:(s:string)=>void;startTour:()=>void}){
-  if(view==='sources') return <StandardPage title="Employee data sources" subtitle="Connect one approved source. PeopleGuard retrieves only authorized fields for each request."><div className="source-grid"><Source id="database" selected={source} set={setSource} icon={<Database/>} title="Database" text="PostgreSQL or MySQL" detail="Secure read-only connection"/><Source id="api" selected={source} set={setSource} icon={<Link2/>} title="HR system API" text="Workday, BambooHR, Zoho" detail="OAuth or service account"/><Source id="file" selected={source} set={setSource} icon={<FileSpreadsheet/>} title="CSV / Excel import" text="Fastest for a demo" detail="Validate columns before import"/></div>{source!=='none'&&<div className="config-banner"><Check/><div><b>{source==='database'?'Database':source==='api'?'HR API':'File import'} selected</b><p>Continue to configure and test this source. Secrets are stored server-side and never shown to employees.</p></div><button className="approve">Configure source</button></div>}</StandardPage>;
-  if(view==='users') return <StandardPage title="Users & roles" subtitle="Create accounts and apply least-privilege role assignments."><button className="primary-inline"><UserPlus size={16}/> Add user</button><div className="role-table"><div><b>Neha Kapoor</b><span>HR · Engineering & Product</span><em>Active</em></div><div><b>Karthik Menon</b><span>Admin · System configuration</span><em>Active</em></div><div><b>Rahul Verma</b><span>Employee · Registration pending</span><em className="pending">Pending</em></div></div></StandardPage>;
-  if(view==='integrations') return <StandardPage title="Konsole & LLM" subtitle="Configure the protected AI gateway and approved model routing."><div className="integration-card"><ShieldCheck/><div><b>Konsole Enterprise profile</b><p>PII detection · prompt injection defense · jailbreak detection · encrypted routing</p></div><span>Connected</span></div><div className="integration-card"><Network/><div><b>Approved model route</b><p>Gemini / Qwen / DeepSeek / MiniMax through Konsole</p></div><button className="secondary">Configure</button></div></StandardPage>;
-  if(view==='audit') return <StandardPage title="Audit & security" subtitle="Monitor access, configuration changes, and blocked attacks."><List rows={['09:42 · ADMIN · Data source settings viewed','09:31 · KONSOLE · Prompt injection blocked','09:15 · HR · Employee EMP-1048 registration reviewed','08:57 · AUTH · Failed login blocked']}/></StandardPage>;
-  if(view==='settings') return <StandardPage title="System settings" subtitle="Departments, retention, backups, and tutorial preferences."><List rows={['Departments & locations','Permission policies','Backup & retention','Security notifications']}/><button className="secondary restart" onClick={startTour}><LifeBuoy size={15}/> Restart setup tutorial</button></StandardPage>;
-  return <StandardPage title="Administration" subtitle="Configure access, integrations, and security—without automatic access to employee salaries."><div className="metric-grid"><Metric label="Active users" value="186" hint="4 roles pending"/><Metric label="Data source" value="Not connected" hint="Setup required"/><Metric label="Security events" value="2" hint="Last 24 hours"/></div><div className="setup-callout"><div><span><Sparkles/></span><div><b>Finish PeopleGuard setup</b><p>Connect employee data, confirm roles, configure Konsole, and run a safe test.</p></div></div><button onClick={startTour}>Continue guided setup <ArrowRight size={15}/></button></div><div className="split"><Panel title="System health"><Action icon={<Database/>} title="Employee source" text="Connection required"/><Action icon={<ShieldCheck/>} title="Konsole gateway" text="Security profile active"/><Action icon={<HardDrive/>} title="Backups" text="Daily retention configured"/></Panel><Panel title="Admin boundary"><div className="boundary-box"><LockKeyhole/><div><b>Configuration access only</b><p>Admin manages users, permissions, integrations, and logs. Salary visibility is not granted automatically.</p></div></div></Panel></div></StandardPage>;
+  const [dialog,setDialog]=useState<AdminDialog>(null);
+  const [sourceActive,setSourceActive]=useState(false);
+  const [people,setPeople]=useState<AdminPerson[]>([
+    {name:'Neha Kapoor',email:'neha@abc.example',role:'HR',scope:'Engineering & Product',status:'Active'},
+    {name:'Karthik Menon',email:'karthik@abc.example',role:'Admin',scope:'System configuration only',status:'Active'},
+    {name:'Rahul Verma',email:'rahul@abc.example',role:'Employee',scope:'Own record only',status:'Pending'},
+  ]);
+  const [konsole,setKonsole]=useState({hasApiKey:false,baseUrl:'https://api.konsole.one/v1',defaultModel:'',runtime:false});
+
+  async function refreshKonsole(){
+    const response=await fetch('/api/models');
+    if(response.ok) setKonsole(await response.json());
+  }
+  useEffect(()=>{ fetch('/api/models').then(response=>response.ok?response.json():null).then(data=>{if(data)setKonsole(data)}); },[]);
+
+  if(view==='sources') return <>
+    <StandardPage title="Employee data source" subtitle="Connect the read-only source the chatbot will query after authorization. This is not an HRMS workflow.">
+      <div className="source-grid"><Source id="database" selected={source} set={s=>{setSource(s);setSourceActive(false)}} icon={<Database/>} title="Database" text="PostgreSQL or MySQL" detail="Read-only employee records"/><Source id="api" selected={source} set={s=>{setSource(s);setSourceActive(false)}} icon={<Link2/>} title="HR system API" text="Workday, BambooHR, Zoho" detail="Fetch only approved fields"/><Source id="file" selected={source} set={s=>{setSource(s);setSourceActive(false)}} icon={<FileSpreadsheet/>} title="CSV / Excel demo" text="Upload sample employee data" detail="Best for the hackathon demo"/></div>
+      {source!=='none'&&<div className="config-banner"><Check/><div><b>{sourceActive?'Source active':`${source==='database'?'Database':source==='api'?'HR API':'CSV / Excel'} selected`}</b><p>{sourceActive?'The chatbot can now retrieve authorized employee fields from this demo source.':'Open the form to enter connection details and run a safe test.'}</p></div><button className="approve" onClick={()=>setDialog('source')}>{sourceActive?'Edit source':'Configure source'}</button></div>}
+    </StandardPage>
+    {dialog==='source'&&<SourceDialog source={source} close={()=>setDialog(null)} activate={()=>{setSourceActive(true);setDialog(null)}}/>}
+  </>;
+
+  if(view==='users') return <>
+    <StandardPage title="Users & authorization" subtitle="Map signed-in identities to least-privilege chatbot access. Admin access never grants salary access.">
+      <button className="primary-inline" onClick={()=>setDialog('user')}><UserPlus size={16}/> Add user</button>
+      <div className="role-table">{people.map(person=><div key={person.email}><b>{person.name}<small>{person.email}</small></b><span>{person.role} · {person.scope}</span><em className={person.status==='Pending'?'pending':''}>{person.status}</em></div>)}</div>
+    </StandardPage>
+    {dialog==='user'&&<UserDialog close={()=>setDialog(null)} add={person=>{setPeople(current=>[...current,person]);setDialog(null)}}/>}
+  </>;
+
+  if(view==='integrations') return <>
+    <StandardPage title="Konsole & LLM" subtitle="Configure the security gateway and the approved model used only after authentication and authorization.">
+      <div className="integration-card"><ShieldCheck/><div><b>Konsole protection profile</b><p>PII detection · prompt injection defense · jailbreak detection · protected routing</p></div><span className={konsole.hasApiKey?'':'needs-setup'}>{konsole.hasApiKey?'Credential ready':'Setup required'}</span><button className="secondary" onClick={()=>setDialog('konsole')}>{konsole.hasApiKey?'Manage':'Configure'}</button></div>
+      <div className="integration-card"><Network/><div><b>Approved model route</b><p>{konsole.defaultModel||'Choose a model returned by your Konsole account'}</p></div><button className="secondary" onClick={()=>setDialog('konsole')}>Configure</button></div>
+      <div className="retention-note"><LockKeyhole/><div><b>Training and retention are separate controls</b><p>PeopleGuard sends the minimum approved context. Whether a provider stores prompts or uses them for training depends on your Konsole contract, selected model provider, and retention settings—so the app does not promise zero retention unless those settings are verified.</p></div></div>
+    </StandardPage>
+    {dialog==='konsole'&&<KonsoleDialog initial={konsole} close={()=>setDialog(null)} saved={async()=>{await refreshKonsole();setDialog(null)}}/>}
+  </>;
+
+  if(view==='audit') return <StandardPage title="Security audit" subtitle="Show judges exactly where each request was authenticated, authorized, protected, or blocked."><List rows={['09:42 · APP AUTHORIZATION · Other employee salary denied before retrieval','09:31 · KONSOLE · Prompt injection blocked','09:15 · DATA BOUNDARY · Only salary field retrieved for EMP-1001','08:57 · AUTHENTICATION · Invalid session rejected']}/></StandardPage>;
+
+  return <StandardPage title="Secure chatbot setup" subtitle="Configure the four layers that make PeopleGuard safe—without turning it into an HRMS.">
+    <div className="metric-grid"><Metric label="Product mode" value="Chatbot" hint="Direct employee answers"/><Metric label="Employee source" value={sourceActive?'Connected':'Demo data'} hint="Least-privilege retrieval"/><Metric label="Konsole gateway" value={konsole.hasApiKey?'Ready':'Configure'} hint="AI security layer"/></div>
+    <div className="setup-callout"><div><span><Sparkles/></span><div><b>Finish the secure chatbot pipeline</b><p>Identity → authorization → minimum employee data → Konsole → approved LLM.</p></div></div><button onClick={startTour}>Open guided setup <ArrowRight size={15}/></button></div>
+    <div className="split"><Panel title="What the employee does"><Action icon={<MessageSquareText/>} title="Asks a personal question" text="Salary, benefits, manager, contact data, or leave balance"/><Action icon={<BadgeCheck/>} title="Gets an immediate answer" text="No HR ticket and no approval wait"/></Panel><Panel title="Security boundary"><div className="boundary-box"><LockKeyhole/><div><b>Retrieve first, minimize always</b><p>The backend retrieves only fields allowed for the signed-in identity. Unauthorized records never enter the AI context.</p></div></div></Panel></div>
+  </StandardPage>;
 }
 
+function SourceDialog({source,close,activate}:{source:string;close:()=>void;activate:()=>void}){
+  const [testing,setTesting]=useState(false);
+  const [tested,setTested]=useState(false);
+  const label=source==='database'?'Read-only database':source==='api'?'HR system API':'CSV / Excel demo';
+  function test(e:FormEvent){e.preventDefault();setTesting(true);setTimeout(()=>{setTesting(false);setTested(true)},650)}
+  return <Modal title={`Configure ${label}`} subtitle="This demo validates the setup flow. Production secrets belong in server-side environment settings." close={close}>
+    <form className="config-form" onSubmit={test}>
+      {source==='file'?<label className="upload-field"><Upload/><span><b>Select employee CSV or Excel</b><small>Required columns: employee_id, name, department, role</small></span><input type="file" accept=".csv,.xlsx,.xls" required/></label>:<>
+        <label>{source==='database'?'Connection URL':'API base URL'}<input type="url" required placeholder={source==='database'?'postgresql://readonly@host/database':'https://api.your-hr-system.com'}/></label>
+        <label>{source==='database'?'Read-only password':'Service credential'}<input type="password" required placeholder="Stored server-side in production"/></label>
+      </>}
+      <div className="least-fields"><b>Allowed chatbot fields</b><label><input type="checkbox" defaultChecked/> Salary</label><label><input type="checkbox" defaultChecked/> Benefits</label><label><input type="checkbox" defaultChecked/> Leave balance</label><label><input type="checkbox" defaultChecked/> Manager</label></div>
+      {tested&&<div className="form-success"><Check/> Demo connection test passed. Field boundary is valid.</div>}
+      <footer><button type="button" className="secondary" onClick={close}>Cancel</button>{tested?<button type="button" className="primary-inline" onClick={activate}>Activate source</button>:<button className="primary-inline" disabled={testing}>{testing?'Testing…':'Test connection'}</button>}</footer>
+    </form>
+  </Modal>;
+}
+
+function UserDialog({close,add}:{close:()=>void;add:(person:AdminPerson)=>void}){
+  function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const data=new FormData(e.currentTarget);const role=String(data.get('role'));add({name:String(data.get('name')),email:String(data.get('email')),role,scope:role==='Employee'?'Own record only':role==='HR'?'Selected departments':'System configuration only',status:'Active'})}
+  return <Modal title="Add chatbot user" subtitle="The role controls which employee records the backend may retrieve." close={close}><form className="config-form" onSubmit={submit}><label>Full name<input name="name" required placeholder="Employee name"/></label><label>Work email<input name="email" type="email" required placeholder="name@company.com"/></label><label>Role<select name="role" defaultValue="Employee"><option>Employee</option><option>HR</option><option>Admin</option></select></label><div className="form-info"><LockKeyhole/> Employees can access only their own record. HR scope must be limited by department. Admin configures the system but cannot read salaries.</div><footer><button type="button" className="secondary" onClick={close}>Cancel</button><button className="primary-inline">Add user</button></footer></form></Modal>;
+}
+
+function KonsoleDialog({initial,close,saved}:{initial:{hasApiKey:boolean;baseUrl:string;defaultModel:string;runtime:boolean};close:()=>void;saved:()=>void}){
+  const [show,setShow]=useState(false);
+  const [key,setKey]=useState('');
+  const [baseUrl,setBaseUrl]=useState(initial.baseUrl);
+  const [model,setModel]=useState(initial.defaultModel);
+  const [models,setModels]=useState<string[]>([]);
+  const [testing,setTesting]=useState(false);
+  const [error,setError]=useState('');
+  const [verified,setVerified]=useState(false);
+  async function test(e:FormEvent){e.preventDefault();setTesting(true);setError('');const response=await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({apiKey:key,baseUrl,model})});const data=await response.json();setTesting(false);if(!response.ok){setError(data.error||'Connection failed');return}setModels((data.models||[]).map((item:{id:string})=>item.id));setModel(data.defaultModel||data.models?.[0]?.id||model);setKey('');setVerified(true)}
+  async function activate(){const response=await fetch('/api/models',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({model})});if(!response.ok){const data=await response.json();setError(data.error||'Could not save route');return}saved()}
+  return <Modal title="Configure Konsole & model" subtitle="The credential is sent once to the server for validation, cleared from this form, and never returned by the API." close={close}><form className="config-form" onSubmit={test}><label>Konsole API base URL<input type="url" value={baseUrl} onChange={e=>setBaseUrl(e.target.value)} required/></label><label>Konsole API key<div className="secret-input"><input type={show?'text':'password'} value={key} onChange={e=>setKey(e.target.value)} required={!initial.hasApiKey} placeholder={initial.hasApiKey?'A server-side key is already configured':'Paste your Konsole key'}/><button type="button" onClick={()=>setShow(v=>!v)} aria-label={show?'Hide API key':'Show API key'}>{show?<EyeOff/>:<Eye/>}</button></div></label>{(verified||models.length>0)&&<label>Approved model<select value={model} onChange={e=>setModel(e.target.value)}>{models.length?models.map(item=><option key={item}>{item}</option>):<option>{model}</option>}</select></label>}<div className="protection-options"><b>Protection profile</b><label><input type="checkbox" defaultChecked/> Prompt-injection detection</label><label><input type="checkbox" defaultChecked/> Jailbreak detection</label><label><input type="checkbox" defaultChecked/> PII masking</label><label><input type="checkbox" defaultChecked/> Output inspection</label></div>{error&&<div className="form-error">{error}</div>}{verified&&<div className="form-success"><Check/> Credential verified. The secret is held only in server runtime for this demo.</div>}<div className="form-info"><ShieldCheck/> For durable production use, store KONSOLE_API_KEY as a hosted secret. Do not commit it to GitHub.</div><footer><button type="button" className="secondary" onClick={close}>Cancel</button>{verified?<button type="button" className="primary-inline" onClick={activate}>Activate model route</button>:<button className="primary-inline" disabled={testing||(!key&&!initial.hasApiKey)}>{testing?'Testing securely…':'Test credential'}</button>}</footer></form></Modal>;
+}
+
+function Modal({title,subtitle,close,children}:{title:string;subtitle:string;close:()=>void;children:React.ReactNode}){return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}><section className="config-modal"><button className="modal-close" onClick={close} aria-label="Close"><X/></button><div className="modal-heading"><span><ShieldCheck/></span><div><h2>{title}</h2><p>{subtitle}</p></div></div>{children}</section></div>}
+
 function Assistant({user,messages,input,sending,trace,scroll,setInput,send,setTrace}:{user:User;messages:Message[];input:string;sending:boolean;trace:Message;scroll:React.RefObject<HTMLDivElement|null>;setInput:(s:string)=>void;send:(e?:FormEvent,p?:string)=>void;setTrace:(m:Message)=>void}){
- const prompts=user.role==='HR_ADMIN'?['How many leave days does Arjun have?','Show Rahul’s profile','Explain the hybrid work policy']:['How many leave days do I have?','What is my salary?','Explain the hybrid work policy'];
- const checks=trace.checks??[{label:'Authentication',detail:'Session identity verified',status:'passed' as const},{label:'Authorization',detail:'Waiting for request',status:'passed' as const},{label:'Konsole security',detail:'Protection active',status:'passed' as const}];
- return <div className="assistant-grid"><section className="chat-panel"><div className="chat-scroll" ref={scroll}><div className="chat-heading"><div className="bot-orb"><Bot/></div><h2>Secure HR assistant</h2><p>Authorization happens before employee data reaches Konsole.</p></div><div className="prompt-row">{prompts.map(p=><button key={p} onClick={()=>send(undefined,p)}>{p}<ChevronRight size={14}/></button>)}</div><div className="conversation">{messages.map(m=><div className={`message-row ${m.role}`} key={m.id} onClick={()=>m.checks&&setTrace(m)}>{m.role==='assistant'&&<span className="message-avatar"><Bot size={16}/></span>}<div><div className={`message-bubble ${m.verdict==='blocked'?'blocked':''}`}>{m.content}</div><small>{m.time}{m.layer&&` · ${m.layer}`}</small></div></div>)}{sending&&<div className="message-row"><span className="message-avatar"><Bot size={16}/></span><div className="message-bubble">Checking access and security…</div></div>}</div></div><form className="composer-wrap" onSubmit={send}><div className="composer"><textarea rows={1} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask an HR question…"/><button disabled={!input.trim()||sending}><Send size={17}/></button></div><p><LockKeyhole size={11}/> Minimum authorized data only</p></form></section><aside className="security-panel"><h3><ShieldCheck/> Security trace</h3><div className={`decision-card ${trace.verdict==='blocked'?'blocked':''}`}><BadgeCheck/><div><small>Latest decision</small><b>{trace.verdict==='blocked'?'Request blocked':'Secure pipeline ready'}</b><span>{trace.layer??'Waiting for request'}</span></div></div>{checks.map(c=><div className="check-row" key={c.label}><span className={`check-icon ${c.status}`}><Check size={13}/></span><div><b>{c.label}</b><small>{c.detail}</small></div></div>)}<div className="boundary-box compact"><LockKeyhole/><div><b>Data boundary</b><p>Only approved fields enter AI context.</p></div></div><code>{trace.auditId??'No audit event yet'}</code></aside></div>
+ const prompts=user.role==='HR_ADMIN'?['What is Arjun’s leave balance?','Who is Rahul’s manager?','Explain the hybrid work policy']:['What is my salary?','What benefits do I have?','Who is my manager?'];
+ const checks=trace.checks??[{label:'Authentication',detail:'Session identity verified',status:'passed' as const},{label:'Authorization',detail:'Waiting for your question',status:'passed' as const},{label:'Konsole security',detail:'Gateway protection ready',status:'passed' as const}];
+ return <div className="assistant-grid"><section className="chat-panel"><div className="chat-scroll" ref={scroll}><div className="chat-heading"><div className="bot-orb"><Bot/></div><h2>Ask about your employee record</h2><p>Get an immediate answer without raising an HR ticket. Authorization happens before any record is retrieved.</p></div><div className="prompt-row">{prompts.map(p=><button key={p} onClick={()=>send(undefined,p)}>{p}<ChevronRight size={14}/></button>)}</div><div className="conversation">{messages.map(m=><div className={`message-row ${m.role}`} key={m.id} onClick={()=>m.checks&&setTrace(m)}>{m.role==='assistant'&&<span className="message-avatar"><Bot size={16}/></span>}<div><div className={`message-bubble ${m.verdict==='blocked'?'blocked':''}`}>{m.content}</div><small>{m.time}{m.layer&&` · ${m.layer}`}</small></div></div>)}{sending&&<div className="message-row"><span className="message-avatar"><Bot size={16}/></span><div className="message-bubble">Verifying identity, access, and request safety…</div></div>}</div></div><form className="composer-wrap" onSubmit={send}><div className="composer"><textarea rows={1} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask about your salary, benefits, manager, leave, or profile…"/><button disabled={!input.trim()||sending} aria-label="Send question"><Send size={17}/></button></div><p><LockKeyhole size={11}/> Only the minimum authorized fields are retrieved</p></form></section><aside className="security-panel"><h3><ShieldCheck/> Live security trace</h3><div className={`decision-card ${trace.verdict==='blocked'?'blocked':''}`}><BadgeCheck/><div><small>Latest decision</small><b>{trace.verdict==='blocked'?'Request blocked':'Secure pipeline ready'}</b><span>{trace.layer??'Waiting for request'}</span></div></div>{checks.map(c=><div className="check-row" key={c.label}><span className={`check-icon ${c.status}`}><Check size={13}/></span><div><b>{c.label}</b><small>{c.detail}</small></div></div>)}<div className="boundary-box compact"><LockKeyhole/><div><b>Data minimization</b><p>Personal facts are answered directly where possible; an LLM never receives the full employee record.</p></div></div><code>{trace.auditId??'No audit event yet'}</code></aside></div>
 }
 
 function AdminTour({step,setStep,finish,close,goSources}:{step:number;setStep:(n:number)=>void;finish:()=>void;close:()=>void;goSources:()=>void}){

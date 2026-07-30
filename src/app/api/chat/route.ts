@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       answer: 'I can’t follow instructions that attempt to override security controls or expose protected employee data. This request was stopped before any HR records were retrieved.',
       verdict: 'blocked',
-      layer: 'Blocked by Konsole Shield',
-      checks: checks('No data access attempted', 'Prompt injection pattern detected', 'blocked'),
+      layer: 'Blocked before data retrieval',
+      checks: checks('No employee data access attempted', 'Prompt-injection pre-check blocked the request', 'blocked'),
       auditId,
     });
   }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       answer: `You are not authorized to access ${target.name}’s employee information. I did not retrieve or send their data to the AI. Please contact HR if you need assistance.`,
       verdict: 'blocked',
       layer: 'Blocked by app authorization',
-      checks: checks(`Denied: ${currentUser.id} cannot access ${target.id}`, 'Input safe; no LLM request made'),
+      checks: checks(`Denied: ${currentUser.id} cannot access ${target.id}`, 'No employee data or LLM request was allowed'),
       auditId,
     });
   }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   let verdict: 'allowed' | 'masked' = 'allowed';
 
   if (/salary|compensation|pay\b|ctc/i.test(lower)) {
-    answer = `${target.id === currentUser.id ? 'Your' : `${target.name}’s`} current annual compensation is ${target.salary}. For payroll changes or a detailed payslip, please use the payroll portal or contact People Operations.`;
+    answer = `${target.id === currentUser.id ? 'Your' : `${target.name}’s`} current annual compensation is ${target.salary}. This answer used only the authorized salary field; the full employee record was not sent to an LLM.`;
   } else if (/leave|vacation|days off|holiday balance/i.test(lower)) {
     answer = `${target.id === currentUser.id ? 'You have' : `${target.name} has`} ${target.leaveBalance} paid leave days remaining this year.`;
   } else if (/benefit|insurance|health cover|learning allowance/i.test(lower)) {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const [emailName, emailDomain] = target.email.split('@');
     const maskedEmail = `${emailName.slice(0, 2)}••••@${emailDomain}`;
     answer = `${target.name}’s protected contact details are ${maskedEmail} and ${maskedPhone}. Full values are masked in the AI response; use the employee portal to view or update them.`;
-    securityDetail = 'PII detected and masked in output';
+    securityDetail = 'PII detected and masked; no full contact record sent to an LLM';
     verdict = 'masked';
   } else if (/manager|report to|reporting/i.test(lower)) {
     answer = `${target.id === currentUser.id ? 'Your' : `${target.name}’s`} reporting manager is ${target.manager}.`;
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     answer,
     verdict,
-    layer: verdict === 'masked' ? 'Allowed · Konsole PII masking' : 'Allowed · least-privilege retrieval',
-    checks: checks(scope, securityDetail, verdict === 'masked' ? 'masked' : 'passed'),
+    layer: verdict === 'masked' ? 'Allowed · PII masked' : 'Authorized direct answer · no LLM call',
+    checks: checks(scope, securityDetail === 'No attack or sensitive output detected' ? 'Minimum field returned directly; no LLM call required' : securityDetail, verdict === 'masked' ? 'masked' : 'passed'),
     auditId,
   });
 }

@@ -32,14 +32,14 @@ export function getKonsoleConfig() {
   };
 }
 
-export async function fetchKonsoleModels(apiKey?: string): Promise<{ success: boolean; models?: ModelInfo[]; error?: string }> {
+export async function fetchKonsoleModels(apiKey?: string, baseUrl = DEFAULT_BASE_URL): Promise<{ success: boolean; models?: ModelInfo[]; error?: string }> {
   const token = apiKey || process.env.KONSOLE_API_KEY;
   if (!token) {
     return { success: false, error: 'No API Key configured. Please enter an API key in settings or set KONSOLE_API_KEY in .env.local.' };
   }
 
   try {
-    const res = await fetch(`${DEFAULT_BASE_URL}/models`, {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/models`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
