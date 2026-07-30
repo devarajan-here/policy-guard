@@ -1,6 +1,6 @@
 import 'server-only';
 
-export type Role = 'EMPLOYEE' | 'HR_ADMIN';
+export type Role = 'EMPLOYEE' | 'HR_ADMIN' | 'SYSTEM_ADMIN';
 
 export type Employee = {
   id: string;
@@ -64,6 +64,21 @@ const employees: Record<string, Employee> = {
     manager: 'Rohan Malhotra',
     benefits: 'Family health cover up to ₹10,00,000, term life insurance, and an annual learning allowance of ₹50,000.',
   },
+  'adm-3001': {
+    id: 'adm-3001',
+    name: 'Karthik Menon',
+    firstName: 'Karthik',
+    role: 'SYSTEM_ADMIN',
+    title: 'Platform Administrator',
+    department: 'IT & Security',
+    initials: 'KM',
+    salary: 'Restricted',
+    leaveBalance: 0,
+    email: 'karthik.menon@abcpvt.example',
+    phone: '+91 90000 30001',
+    manager: 'Technology Office',
+    benefits: 'Not available to the system-administrator role.',
+  },
 };
 
 export function getEmployee(id: string) {
@@ -79,7 +94,7 @@ export function findMentionedEmployee(input: string) {
   const normalized = input.toLowerCase();
   return Object.values(employees).find(
     (employee) =>
-      employee.id !== 'hr-2001' &&
+      employee.role === 'EMPLOYEE' &&
       (normalized.includes(employee.name.toLowerCase()) ||
         normalized.includes(employee.firstName.toLowerCase()) ||
         normalized.includes(employee.id.toLowerCase())),

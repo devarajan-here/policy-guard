@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
   } else if (/manager|report to|reporting/i.test(lower)) {
     answer = `${target.id === currentUser.id ? 'Your' : `${target.name}’s`} reporting manager is ${target.manager}.`;
   } else if (/who am i|my role|my department|job title/i.test(lower)) {
-    answer = `You’re signed in as ${currentUser.name}, ${currentUser.title} in ${currentUser.department}. Your access level is ${currentUser.role === 'HR_ADMIN' ? 'HR administrator' : 'employee self-service'}.`;
+    const access = currentUser.role === 'HR_ADMIN' ? 'HR administrator' : currentUser.role === 'SYSTEM_ADMIN' ? 'system administration (without automatic employee-data access)' : 'employee self-service';
+    answer = `You’re signed in as ${currentUser.name}, ${currentUser.title} in ${currentUser.department}. Your access level is ${access}.`;
   } else if (/policy|remote|work from home|wfh/i.test(lower)) {
     answer = 'ABC Pvt Ltd supports hybrid work with up to two remote days per week, subject to manager approval and team schedules. No employee record was needed for this answer.';
   } else {
