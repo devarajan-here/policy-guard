@@ -1,0 +1,4 @@
+{
+  "buildCommand": "vinext build",
+  "outputDirectory": "dist"
+}
