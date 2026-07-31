@@ -52,6 +52,16 @@ export default function Home(){
     } catch {}
     return DEFAULT_USERS;
   });
+  const [selected,setSelected]=useState(DEFAULT_USERS[0].id);
+  const [view,setView]=useState('overview');
+  const [messages,setMessages]=useState<Message[]>([WELCOME]);
+  const [input,setInput]=useState('');
+  const [sending,setSending]=useState(false);
+  const [trace,setTrace]=useState<Message>(WELCOME);
+  const [tutorial,setTutorial]=useState(false);
+  const [step,setStep]=useState(0);
+  const [source,setSource]=useState('none');
+  const scroll=useRef<HTMLDivElement>(null);
 
   useEffect(()=>{ fetch('/api/session').then(r=>r.ok?r.json():null).then(d=>{setUser(d?.user??null);if(d?.user?.role==='SYSTEM_ADMIN'&&!localStorage.getItem('peopleguard_admin_tour_done'))setTutorial(true)}).finally(()=>setLoading(false)); },[]);
   useEffect(()=>{ scroll.current?.scrollTo({top:scroll.current.scrollHeight,behavior:'smooth'}); },[messages,sending]);
