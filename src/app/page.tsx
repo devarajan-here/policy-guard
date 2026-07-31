@@ -37,34 +37,21 @@ function displayRoleTag(role:Role|string){ return role==='EMPLOYEE'||role==='Emp
 export default function Home(){
   const [user,setUser]=useState<User|null>(null);
   const [loading,setLoading]=useState(true);
-  const [userList,setUserList]=useState<(User & { detail: string })[]>(DEFAULT_USERS);
-  const [selected,setSelected]=useState(DEFAULT_USERS[0].id);
-  const [view,setView]=useState('overview');
-  const [messages,setMessages]=useState<Message[]>([WELCOME]);
-  const [input,setInput]=useState('');
-  const [sending,setSending]=useState(false);
-  const [trace,setTrace]=useState<Message>(WELCOME);
-  const [tutorial,setTutorial]=useState(false);
-  const [step,setStep]=useState(0);
-  const [source,setSource]=useState('none');
-  const scroll=useRef<HTMLDivElement>(null);
-
-  // Load custom users from localStorage on startup
-  useEffect(() => {
+  const [userList, setUserList] = useState<(User & { detail: string })[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_USERS;
     try {
       const stored = localStorage.getItem('peopleguard_custom_users');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setUserList(prev => {
-            const existingIds = new Set(prev.map(u => u.id));
-            const newUsers = parsed.filter(u => !existingIds.has(u.id));
-            return [...prev, ...newUsers];
-          });
+          const existingIds = new Set(DEFAULT_USERS.map(u => u.id));
+          const newUsers = parsed.filter((u: User) => !existingIds.has(u.id));
+          return [...DEFAULT_USERS, ...newUsers];
         }
       }
     } catch {}
-  }, []);
+    return DEFAULT_USERS;
+  });
 
   useEffect(()=>{ fetch('/api/session').then(r=>r.ok?r.json():null).then(d=>{setUser(d?.user??null);if(d?.user?.role==='SYSTEM_ADMIN'&&!localStorage.getItem('peopleguard_admin_tour_done'))setTutorial(true)}).finally(()=>setLoading(false)); },[]);
   useEffect(()=>{ scroll.current?.scrollTo({top:scroll.current.scrollHeight,behavior:'smooth'}); },[messages,sending]);
@@ -232,7 +219,6 @@ function EmployeeView({view,user,openAssistant}:{view:string;user:User;openAssis
 function HRView({view,openAssistant,onUserAdded}:{view:string;openAssistant:()=>void;onUserAdded:(user: User & { detail: string }) => void}){
   const [policies, setPolicies] = useState(['Hybrid work policy · v3.2', 'Leave policy · v5.0', 'Benefits handbook · 2026']);
   const [showUpload, setShowUpload] = useState(false);
-  const [showAddEmp, setShowAddEmp] = useState(false);
 
   if(view==='people') return <PeopleTable onUserAdded={onUserAdded}/>;
   if(view==='policies') return <StandardPage title="Policies & documents" subtitle="Publish trusted content used by the HR assistant.">
@@ -278,7 +264,20 @@ function AdminView({view,source,setSource,startTour,onUserAdded}:{view:string;so
       if (data.baseUrl) setInlineBaseUrl(data.baseUrl);
     }
   }
-  useEffect(()=>{ refreshKonsole(); },[]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/models')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (active && data) {
+          setKonsole(data);
+          if (data.baseUrl) setInlineBaseUrl(data.baseUrl);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   async function handleSaveKonsoleKey(e: FormEvent) {
     e.preventDefault();
@@ -299,9 +298,9 @@ function AdminView({view,source,setSource,startTour,onUserAdded}:{view:string;so
       setInlineMessage({ type: 'success', text: `Konsole API Key verified successfully! Model route: ${data.defaultModel || 'gemini-2.5-flash'}` });
       setInlineKey('');
       await refreshKonsole();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setInlineSaving(false);
-      setInlineMessage({ type: 'error', text: err.message || 'Connection error while saving API key' });
+      setInlineMessage({ type: 'error', text: err instanceof Error ? err.message : 'Connection error while saving API key' });
     }
   }
 
