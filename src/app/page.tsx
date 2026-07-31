@@ -5,7 +5,7 @@ import {
   Activity, ArrowRight, BadgeCheck, Bot, Check, ChevronRight, CircleUserRound,
   Database, DoorOpen, Eye, EyeOff, FileSpreadsheet, FileText, Fingerprint, Gauge,
   KeyRound, Link2, LockKeyhole, MessageSquareText, Network, Plus, Search, Send,
-  Shield, ShieldAlert, ShieldCheck, Sparkles, Upload, UserCog, UserPlus, UsersRound, X,
+  Shield, ShieldAlert, ShieldCheck, Sparkles, Trash2, Upload, UserCog, UserPlus, UsersRound, X,
 } from 'lucide-react';
 
 type Role = 'EMPLOYEE' | 'HR_ADMIN' | 'SYSTEM_ADMIN';
@@ -125,6 +125,21 @@ export default function Home(){
     }).catch(() => {});
   }
 
+  function handleRemoveUser(id: string, e?: React.MouseEvent) {
+    e?.stopPropagation();
+    setUserList(prev => {
+      const updated = prev.filter(u => u.id !== id);
+      try {
+        const customOnly = updated.filter(u => !DEFAULT_USERS.some(d => d.id === u.id));
+        localStorage.setItem('peopleguard_custom_users', JSON.stringify(customOnly));
+      } catch {}
+      return updated;
+    });
+    if (selected === id) {
+      setSelected(userList.find(u => u.id !== id)?.id || DEFAULT_USERS[0].id);
+    }
+  }
+
   function dismissTour(){ localStorage.setItem('peopleguard_admin_tour_done','1'); setTutorial(false); setStep(0); }
   function finishTour(){ dismissTour(); }
 
@@ -141,14 +156,39 @@ export default function Home(){
         <div className="login-card"><div className="login-card-icon"><KeyRound/></div><h2>Sign in</h2><p>Select a role-based demo account or an admin-added identity below.</p>
           <label>Select Account ({userList.length} identities available)</label>
           <div className="account-list">
-            {userList.map(u => (
-              <button key={u.id} className={selected === u.id ? 'selected' : ''} onClick={() => setSelected(u.id)}>
-                <span className="avatar small">{u.initials}</span>
-                <span><b>{u.name}</b><small>{u.detail}</small></span>
-                <em>{displayRoleTag(u.role)}</em>
-                {selected === u.id && <Check size={15}/>}
-              </button>
-            ))}
+            {userList.map(u => {
+              const isRemovable = !DEFAULT_USERS.some(d => d.id === u.id);
+              return (
+                <div key={u.id} className={`account-row-wrap ${selected === u.id ? 'selected' : ''}`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <button className={selected === u.id ? 'selected' : ''} onClick={() => setSelected(u.id)} style={{ flex: 1 }}>
+                    <span className="avatar small">{u.initials}</span>
+                    <span><b>{u.name}</b><small>{u.detail}</small></span>
+                    <em>{displayRoleTag(u.role)}</em>
+                    {selected === u.id && <Check size={15}/>}
+                  </button>
+                  {isRemovable && (
+                    <button
+                      className="account-delete-btn"
+                      onClick={(e) => handleRemoveUser(u.id, e)}
+                      title={`Remove ${u.name}`}
+                      aria-label={`Remove ${u.name}`}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        padding: '8px 10px',
+                        cursor: 'pointer',
+                        display: 'grid',
+                        placeItems: 'center',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      <Trash2 size={15}/>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <button className="primary-button" onClick={signIn}>Continue as {roleName(chosen.role)}<ArrowRight size={17}/></button>
           <div className="login-note"><LockKeyhole size={12}/> Secure demo identities · server-signed session</div>
@@ -306,7 +346,26 @@ function AdminView({view,source,setSource,startTour,onUserAdded}:{view:string;so
   if(view==='users') return <>
     <StandardPage title="Users & authorization" subtitle="Map signed-in identities to least-privilege chatbot access. Admin users added here will appear on the sign-in screen.">
       <button className="primary-inline" onClick={()=>setDialog('user')}><UserPlus size={16}/> Add user (creates sign-in account)</button>
-      <div className="role-table">{people.map(person=><div key={person.email}><b>{person.name}<small>{person.email} · {person.id.toUpperCase()}</small></b><span>{person.role} · {person.scope}</span><em className={person.status==='Pending'?'pending':''}>{person.status}</em></div>)}</div>
+      <div className="role-table">
+        {people.map(person => (
+          <div key={person.email} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <b>{person.name}<small>{person.email} · {person.id.toUpperCase()}</small></b>
+              <span>{person.role} · {person.scope}</span>
+              <em className={person.status==='Pending'?'pending':''}>{person.status}</em>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPeople(prev => prev.filter(p => p.email !== person.email))}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
+              title={`Remove ${person.name}`}
+              aria-label={`Remove ${person.name}`}
+            >
+              <Trash2 size={15}/>
+            </button>
+          </div>
+        ))}
+      </div>
     </StandardPage>
     {dialog==='user'&&<UserDialog close={()=>setDialog(null)} add={handleAddUser}/>}
   </>;
