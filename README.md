@@ -4,6 +4,17 @@ PeopleGuard is a secure-by-design HR assistant built for the Konsole hackathon. 
 
 **Live demo:** https://peopleguard-abc-hr.cyberlancers-pvt-ltd.chatgpt.site
 
+## Architecture & API Key Security Flow
+
+![Konsole API Key Security Flow](docs/policyguard_api_key_flow.svg)
+
+## Documentation & Assets
+
+- 📄 [Enterprise Architecture Specification (PDF)](docs/Secure%20HR%20Assistant%20%E2%80%93%20Enterprise%20Architecture.pdf)
+- 📊 [Executive Presentation Deck (PPTX)](docs/Secure_HR_Assistant_Presentation.pptx)
+- 📝 [Project Proposal Document (DOCX)](docs/Secure_HR_Assistant_Project_Proposal.docx)
+- 📐 [Konsole Gateway API Key Flow Diagram (SVG)](docs/policyguard_api_key_flow.svg)
+
 ## Security model
 
 1. A signed, HTTP-only session authenticates the current user.

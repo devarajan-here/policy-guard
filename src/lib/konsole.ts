@@ -22,12 +22,12 @@ export interface ModelInfo {
 }
 
 const DEFAULT_BASE_URL = process.env.KONSOLE_BASE_URL || 'https://api.konsole.one/v1';
-const DEFAULT_MODEL = process.env.KONSOLE_MODEL_ID || 'e30061c0dbd41052cc6f849b42e9ca8112170d9ef43ce7fde9f89faf86eee207';
+const DEFAULT_MODEL = (process.env.KONSOLE_MODEL_ID && !/^[a-f0-9]{32,64}$/i.test(process.env.KONSOLE_MODEL_ID)) ? process.env.KONSOLE_MODEL_ID : 'gemini-2.5-flash';
 
 export function getKonsoleConfig() {
   return {
     baseUrl: process.env.KONSOLE_BASE_URL || DEFAULT_BASE_URL,
-    defaultModel: process.env.KONSOLE_MODEL_ID || DEFAULT_MODEL,
+    defaultModel: DEFAULT_MODEL,
     hasServerApiKey: Boolean(process.env.KONSOLE_API_KEY && process.env.KONSOLE_API_KEY.trim() !== ''),
   };
 }

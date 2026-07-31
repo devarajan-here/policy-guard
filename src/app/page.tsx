@@ -125,7 +125,8 @@ export default function Home(){
     }).catch(() => {});
   }
 
-  function finishTour(){ localStorage.setItem('peopleguard_admin_tour_done','1'); setTutorial(false); setStep(0); }
+  function dismissTour(){ localStorage.setItem('peopleguard_admin_tour_done','1'); setTutorial(false); setStep(0); }
+  function finishTour(){ dismissTour(); }
 
   if(loading) return <div className="loading-screen"><ShieldCheck size={28}/><p>Opening secure workspace…</p></div>;
 
@@ -137,7 +138,7 @@ export default function Home(){
         <div className="login-story"><span className="eyebrow"><Sparkles size={14}/> Answers without an HR ticket</span><h1>Ask about your work life.<br/><em>Get a secure answer now.</em></h1><p>PeopleGuard is an employee-data chatbot. Your identity limits what the backend retrieves, while Konsole protects the AI interaction from prompt attacks and sensitive-data leakage.</p>
           <div className="security-path"><Path icon={<Fingerprint/>} title="Authenticate" text="Who are you?"/><i/><Path icon={<LockKeyhole/>} title="Authorize" text="What can you access?"/><i/><Path icon={<ShieldCheck/>} title="Protect AI" text="Konsole security"/></div>
         </div>
-        <div className="login-card"><div className="login-card-icon"><KeyRound/></div><h2>Sign in to ABC People</h2><p>Select a role-based demo account or an admin-added identity below.</p>
+        <div className="login-card"><div className="login-card-icon"><KeyRound/></div><h2>Sign in</h2><p>Select a role-based demo account or an admin-added identity below.</p>
           <label>Select Account ({userList.length} identities available)</label>
           <div className="account-list">
             {userList.map(u => (
@@ -175,7 +176,7 @@ export default function Home(){
          <AdminView view={view} source={source} setSource={setSource} startTour={()=>{setStep(0);setTutorial(true)}} onUserAdded={handleRegisterUser}/>}
       </div>
     </section>
-    {tutorial&&<AdminTour step={step} setStep={setStep} finish={finishTour} close={()=>setTutorial(false)} goSources={()=>{setView('sources');setTutorial(false)}}/>}
+    {tutorial&&<AdminTour step={step} setStep={setStep} finish={finishTour} close={dismissTour} goSources={()=>{setView('sources');dismissTour()}}/>}
   </main>;
 }
 
